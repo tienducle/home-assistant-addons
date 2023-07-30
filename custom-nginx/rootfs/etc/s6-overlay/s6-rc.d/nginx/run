@@ -1,0 +1,96 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Start nginx service
+# Originally from: https://github.com/home-assistant/addons/tree/master/nginx_proxy
+# ==============================================================================
+
+set -e
+
+CONFIG_DOMAIN=$(bashio::config 'domain')
+CONFIG_PRIVATE_KEY_FILE=$(bashio::config 'private_key_file')
+CONFIG_CERTIFICATE_FILE=$(bashio::config 'certificate_file')
+
+HA_PORT=$(bashio::core.port)
+
+NGINX_CONFIG_FOLDER_PATH=/etc/custom_nginx
+PRIVATE_PERSISTENT_STORAGE=/data
+CUSTOM_CONFIG_PATH=$(bashio::config 'custom_config_path')
+
+_sed () {
+    str=$1
+    file=$2
+    sed -i "$str" "$file";
+}
+
+_sed_ha_port() {
+    file=$1
+    #bashio::log.info "Replacing %%HA_PORT%% in $file"
+    _sed "s/%%HA_PORT%%/$HA_PORT/g" "$file";
+}
+
+_sed_domain() {
+    file=$1
+    #bashio::log.info "Replacing %%SERVER_NAME%% in $file"
+    _sed "s/%%SERVER_NAME%%/$CONFIG_DOMAIN/g" "$file";
+}
+
+_sed_fullchain() {
+    file=$1
+    #bashio::log.info "Replacing %%CERTIFICATE_FILE%% in $file"
+    _sed "s#%%CERTIFICATE_FILE%%#$CONFIG_CERTIFICATE_FILE#g" "$file";
+}
+
+_sed_privkey() {
+    file=$1
+    #bashio::log.info "Replacing %%PRIVATE_KEY_FILE%% in $file"
+    _sed "s#%%PRIVATE_KEY_FILE%%#$CONFIG_PRIVATE_KEY_FILE#g" "$file";
+}
+
+# Generate dhparams
+DHPARAMS_FILE="$PRIVATE_PERSISTENT_STORAGE/dhparams.pem"
+if ! bashio::fs.file_exists "${DHPARAMS_FILE}"; then
+    bashio::log.info  "Generating dhparams (this will take some time)..."
+    openssl dhparam -dsaparam -out "$DHPARAMS_FILE" 4096 > /dev/null
+fi
+
+if bashio::config.true 'advanced'; then
+    if [[ "$CUSTOM_CONFIG_PATH" == */ ]]; then
+        CUSTOM_CONFIG_PATH="${CUSTOM_CONFIG_PATH%/}"
+    fi
+    bashio::log.info "Removing default configuration..."
+    rm -rfv "$NGINX_CONFIG_FOLDER_PATH"/*
+    bashio::log.info "Copying custom configuration..."
+    cp -rv "$CUSTOM_CONFIG_PATH"/* "$NGINX_CONFIG_FOLDER_PATH"
+
+    for file in "$NGINX_CONFIG_FOLDER_PATH"/*; do
+        _sed_ha_port "$file"
+        _sed_domain "$file"
+        _sed_fullchain "$file"
+        _sed_privkey "$file"
+         stat "/ssl/$CONFIG_CERTIFICATE_FILE" -c %y > /tmp/certificate_timestamp
+    done
+
+else
+    _sed "s/%%HA_PORT%%/$HA_PORT/g" "$NGINX_CONFIG_FOLDER_PATH/default_ha_location.conf";
+
+    if bashio::config.true 'use_default_http_config'; then
+        bashio::log.info "Enabling default http configuration..."
+        _sed_domain "$NGINX_CONFIG_FOLDER_PATH/default_http.conf";
+        _sed "s|#include /etc/custom_nginx/default_http.conf;|include /etc/custom_nginx/default_http.conf;|" "$NGINX_CONFIG_FOLDER_PATH/nginx.conf";
+    fi
+
+    if bashio::config.true 'use_default_https_config'; then
+        bashio::log.info "Enabling default https configuration..."
+        _sed_domain "$NGINX_CONFIG_FOLDER_PATH/default_https.conf";
+        _sed_fullchain "$NGINX_CONFIG_FOLDER_PATH/default_https.conf";
+        _sed_privkey "$NGINX_CONFIG_FOLDER_PATH/default_https.conf";
+
+        _sed "s|#include /etc/custom_nginx/default_https.conf;|include /etc/custom_nginx/default_https.conf;|" "$NGINX_CONFIG_FOLDER_PATH/nginx.conf";
+        stat "/ssl/$CONFIG_CERTIFICATE_FILE" -c %y > /tmp/certificate_timestamp
+    fi
+fi
+
+# start server
+bashio::log.info "Running nginx..."
+exec nginx -c "$NGINX_CONFIG_FOLDER_PATH/nginx.conf" < /dev/null

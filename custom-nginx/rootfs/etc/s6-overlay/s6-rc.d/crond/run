@@ -1,0 +1,8 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Start crond service
+# Source: https://github.com/home-assistant/addons/tree/master/nginx_proxy
+# ==============================================================================
+
+exec crond -f -d 9

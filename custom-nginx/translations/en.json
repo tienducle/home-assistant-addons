@@ -1,0 +1,36 @@
+{
+    "configuration": {
+        "domain": {
+            "name": "Domain",
+            "description": "The domain of your Home Assistant instance."
+        },
+        "use_default_http_config": {
+            "name": "Use default (bundled) HTTP config",
+            "description": "Use the default nginx HTTP configuration which is bundled in the addon."
+        },
+        "use_default_https_config": {
+            "name": "Use default (bundled) HTTPS config",
+            "description": "Use the default nginx HTTPS configuration which is bundled in the addon."
+        },
+        "certificate_file": {
+            "name": "Certificate File",
+            "description": "The certificate file in the /ssl directory."
+        },
+        "private_key_file": {
+            "name": "Private Key File",
+            "description": "Private key file in the /ssl directory."
+        },
+        "advanced": {
+            "name": "Advanced",
+            "description": "Provide custom nginx configuration instead of using bundled files."
+        },
+        "custom_config_path": {
+            "name": "Custom configuration path",
+            "description": "Path to the folder containing your custom nginx.conf file."
+        }
+    },
+    "network": {
+        "443/tcp": "Map the given port to port 443 of the addon",
+        "80/tcp": "Map the given port to port 80 of the addon"
+    }
+}
