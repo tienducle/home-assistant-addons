@@ -1,9 +1,9 @@
 ---
 name: Custom Nginx
-version: 0.0.1
+version: 0.0.2
 slug: custom_nginx
 description: "Customizable Nginx Add-On (derived from https://github.com/home-assistant/addons/tree/master/nginx_proxy)"
-url: 'https://github.com/tienducle/ha-addon-custom-nginx'
+url: 'https://github.com/tienducle/home-assistant-addons/custom-nginx'
 image: 'ghcr.io/tienducle/ha-addon-custom-nginx-{arch}'
 arch:
   - aarch64

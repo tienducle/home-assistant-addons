@@ -64,6 +64,8 @@ profile custom_nginx flags=(attach_disconnected,mediate_deleted) {
 
     /run/nginx.pid rw,
 
+    /tmp/** rw,
+
     capability chown,
     capability setuid,
     capability setgid,

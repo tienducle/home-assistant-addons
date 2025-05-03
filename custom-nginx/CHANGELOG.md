@@ -1,5 +1,9 @@
 <!-- https://developers.home-assistant.io/docs/add-ons/presentation#keeping-a-changelog -->
 
+## 1.3.0
+- Updated to 3.20 base images
+- Fixed access to tmp folder for file uploads
+
 ## 1.2.0
 
 - Add an apparmor profile
